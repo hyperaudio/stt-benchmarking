@@ -8,6 +8,7 @@ R5 | As little configuration as possible | Depend on test data format as much as
 R6 | Return processing time | How to measure? E.g., from receiving job ID to job complete API message.     
 R7 | Return sentence error rate | Future requirement? 
 R8 | Return total number of identified speakers 
+R9 | Return Diarisation Error Rate | Something like words or fraction of time speakers were correctly identified. Looks like there are competing methods to measure this: http://www.xavieranguera.com/phdthesis/node108.html, http://home.iitk.ac.in/~anurendk/ee698/report.pdf https://github.com/nryant/dscore, https://pdfs.semanticscholar.org/0db8/de0d040a9dd5db3d5229fda53f3a1c41e8de.pdf. 
 R10 | Return correct speaker gender identification  | Should 'undetermined' count as an error? 
 R11 | Language agnostic | Rely on user to provide tokenized input 
 R12 | Include guidelines for the reference text file, eg normalisation. | Keep it minimal. Things like white spaces and curly apostrophes should be removed, but allow for house styles like EM dash/hyphen. 
