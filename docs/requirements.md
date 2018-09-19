@@ -17,3 +17,4 @@ R14 | Normalise confidence scores. | E.g. return all as %. Or normalise across p
 R15 | Return average confidence score for the transcript. 
 R16 | Streams | Reminder for future thinking.  
 R17 | Normalise reference transcript into internal extensible format  | E.g convert text, CTM and MLF into an internal format. The internal format is a list of tokens with metadata.
+R18 | Convert provider transcripts into a standard transcript format | This could be into the internal format or a different one that is surfaced to the user. 
