@@ -15,6 +15,7 @@ class Entity:
 
     def __init__(self, tokens):
         self.tokens = tokens
+        self.speaker = "UU"
 
     @classmethod
     def from_token(cls, token):
@@ -46,10 +47,12 @@ class Entity:
         return last_token.text if last_token.is_punct else None
 
     def serialise(self):
+        print(self)
         return {
             'text': str(self),
             'capitalisation': self.capitalisation,
             'punctuation': self.punctuation,
+            'speaker': self.speaker,
         }
 
     def __str__(self):
@@ -71,6 +74,7 @@ class TokenizeCommand:
         self.input_path = input_path
         self.rejoin_contractions = rejoin_contractions
         self.spacy_model = spacy_model
+        self.speaker = "UU"
 
     @staticmethod
     def parse_args():
@@ -98,9 +102,26 @@ class TokenizeCommand:
         nlp = spacy.load(self.spacy_model)
         return nlp(plaintext)
 
+    def set_speaker(self, speaker):
+        self.speaker = speaker
+
     def entities_from_tokens(self, tokens):
         entities = []
+        grabspeaker = False
         for token in tokens:
+            if "SPEAKER" in token.text:
+                #Do Somethng
+                grabspeaker = True
+                tokencount = 0
+            if grabspeaker:
+                if tokencount <= 1:
+                    tokencount += 1
+                    pass
+                else:
+                    self.set_speaker(token.text)
+                    grabspeaker = False
+                    pass 
+
             if token.text.strip() == "":
                 # Ignore whitespace
                 continue
@@ -119,6 +140,7 @@ class TokenizeCommand:
             else:
                 # Next entity
                 entities.append(Entity.from_token(token))
+            entities[-1].speaker = self.speaker
         return entities
 
     def print_results(self, entities):
@@ -139,4 +161,4 @@ if __name__ == '__main__':
         spacy_model='en',
     )
     command.execute()
-    sys.exit(0)
+sys.exit(0)
