@@ -102,9 +102,6 @@ class TokenizeCommand:
         nlp = spacy.load(self.spacy_model)
         return nlp(plaintext)
 
-    def set_speaker(self, speaker):
-        self.speaker = speaker
-
     def entities_from_tokens(self, tokens):
         entities = []
         grabspeaker = False
@@ -116,11 +113,11 @@ class TokenizeCommand:
             if grabspeaker:
                 if tokencount <= 1:
                     tokencount += 1
-                    pass
+                    continue
                 else:
-                    self.set_speaker(token.text)
+                    self.speaker = token.text
                     grabspeaker = False
-                    pass 
+                    continue 
 
             if token.text.strip() == "":
                 # Ignore whitespace
