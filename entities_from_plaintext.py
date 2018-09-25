@@ -4,15 +4,17 @@ import os
 import re
 import sys
 
+import enum
 import spacy
 
+import sclite_parser
+
+class Capitalisation(enum.Enum):
+    upper = "U"
+    lower = "L"
+    mixed = "M"
 
 class Entity:
-
-    CAPITALISATION_UPPER = 'U'
-    CAPITALISATION_LOWER = 'L'
-    CAPITALISATION_MIXED = 'M'
-
     def __init__(self, tokens):
         self.tokens = tokens
         self.speaker = "UU"
@@ -29,28 +31,27 @@ class Entity:
         return (
             token
             for token in self.tokens
-            if not token.is_punct
+            if not token.is_punct or token.text == "-"
         )
 
     @property
     def capitalisation(self):
         if all(token.is_upper for token in self.tokens_without_punct):
-            return self.CAPITALISATION_UPPER
+            return Capitalisation.upper
         elif all(token.is_lower for token in self.tokens_without_punct):
-            return self.CAPITALISATION_LOWER
+            return Capitalisation.lower
         else:
-            return self.CAPITALISATION_MIXED
+            return Capitalisation.mixed
 
     @property
     def punctuation(self):
         last_token = self.tokens[-1]
-        return last_token.text if last_token.is_punct else None
+        return last_token.text if last_token.is_punct and last_token.text != "-" else None
 
     def serialise(self):
-        print(self)
         return {
-            'text': str(self),
-            'capitalisation': self.capitalisation,
+            'text': str(self).lower(),
+            'capitalisation': self.capitalisation.value,
             'punctuation': self.punctuation,
             'speaker': self.speaker,
         }
@@ -70,11 +71,11 @@ class TokenizeCommand:
         ),
     }
 
-    def __init__(self, input_path, rejoin_contractions, spacy_model):
+    def __init__(self, input_path, sclite_output, spacy_model):
         self.input_path = input_path
-        self.rejoin_contractions = rejoin_contractions
+        self.sclite_output = sclite_output
         self.spacy_model = spacy_model
-        self.speaker = "UU"
+        self.speaker = "Will Williams"
 
     @staticmethod
     def parse_args():
@@ -86,8 +87,8 @@ class TokenizeCommand:
             help="Path to plaintext file",
         )
         parser.add_argument(
-            '--rejoin-contractions',
-            help="Enable rejoining of contractions",
+            '--sclite-output',
+            help="Enable output to be in trn format (preferred by sclite)",
             action='store_const',
             const=True,
             default=False,
@@ -105,6 +106,7 @@ class TokenizeCommand:
     def entities_from_tokens(self, tokens):
         entities = []
         grabspeaker = False
+        grab_hyphen_text = False
         for token in tokens:
             if "SPEAKER" in token.text:
                 #Do Somethng
@@ -117,7 +119,7 @@ class TokenizeCommand:
                 else:
                     self.speaker = token.text
                     grabspeaker = False
-                    continue 
+                    continue
 
             if token.text.strip() == "":
                 # Ignore whitespace
@@ -125,13 +127,15 @@ class TokenizeCommand:
             elif not entities:
                 # First entity
                 entities.append(Entity.from_token(token))
+            if grab_hyphen_text:
+                entities[-1].add_token(token)
+                grab_hyphen_text = False
             elif token.is_punct:
+                if token.text == "-":
+                    grab_hyphen_text = True
                 # Rejoin punctuation
                 entities[-1].add_token(token)
-            elif (
-                self.rejoin_contractions and
-                self.PATTERNS['is_contraction'].search(token.text)
-            ):
+            elif self.PATTERNS['is_contraction'].search(token.text):
                 # Rejoin contractions
                 entities[-1].add_token(token)
             else:
@@ -147,14 +151,18 @@ class TokenizeCommand:
         plaintext = self.read_input()
         tokens = self.extract_tokens(plaintext)
         entities = self.entities_from_tokens(tokens)
-        self.print_results(entities)
+        if self.sclite_output:
+            serialised_entities = [entity.serialise() for entity in entities]
+            sclite_parser.parse_to_sclite(serialised_entities)
+        else:
+            self.print_results(entities)
 
 
 if __name__ == '__main__':
     args = TokenizeCommand.parse_args()
     command = TokenizeCommand(
         input_path=args.input_path,
-        rejoin_contractions=args.rejoin_contractions,
+        sclite_output = args.sclite_output,
         spacy_model='en',
     )
     command.execute()
